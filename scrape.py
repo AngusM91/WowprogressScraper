@@ -45,7 +45,7 @@ for item in list:
     soup = BeautifulSoup(data,'html.parser')
     
     needsTransfer = True
-    if item in ourServer:
+    if ourServer in item:
         needsTransfer = False
     
     for info in soup.find_all('i'):
