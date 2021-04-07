@@ -26,6 +26,7 @@ print("\n\n Class & spec combinations available: \n ~~~~~~~~~~~~~~~~~~\n deathkn
 ourClass = input("Class: ")
 ourSpecs = input("Specs: ")
 minGearscore = input("Min Gearscore: ")
+minKills = input("Min mythic kills this tier: ")
 
 
 async def fetch(session, url):
@@ -110,12 +111,19 @@ async def main():
                                 gsText = gs.get_text()
                                 gsF = float(gsText[12:])
                                 if gsF >= float(minGearscore):
-                                    if needsTransfer:
-                                        for spanText in soup.find_all('span'):
-                                            if transferKey in spanText.get_text():
+                                    bossKillTable = soup.find(id="tiers_details")
+                                    if bossKillTable is not None:
+                                        kills = 0
+                                        for kill in soup.find_all(class_='progress_heroic'):
+                                            if "Mythic" in kill.get_text():
+                                                kills+=1
+                                        if kills >= int(minKills):
+                                            if needsTransfer:
+                                                for spanText in soup.find_all('span'):
+                                                    if transferKey in spanText.get_text():
+                                                       finalList.append(url)
+                                            else:
                                                finalList.append(url)
-                                    else:
-                                       finalList.append(url)
             else:
                 continue
             index += 1
