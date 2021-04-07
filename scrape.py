@@ -88,7 +88,10 @@ async def main():
             tasks.append(fetch(session, url))
 
         htmls = await asyncio.gather(*tasks)
-      
+        msg = "Successfully retrieved " + str(len(htmls)) + " URLs."
+        print(msg)
+        print("Processing...")
+        index = 0
         for html in htmls:
             if html is not None:
                 url = html[1]
@@ -109,6 +112,9 @@ async def main():
                            finalList.append(url)
             else:
                 continue
+            index += 1
+            msg = "Progress: " + str(round(len(htmls) / 100 * index, 2)) + "%"
+            print(msg, end='\r')
     
     ##Write the relevent urls for hits to file; TODO Directly to google sheet?
     fileName = ourClass + "_" + ourSpecs + ".txt"
