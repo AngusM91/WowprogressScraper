@@ -13,7 +13,7 @@ pagesToCheck = 10
 
 ###################################
 #KEYS##############################
-base = "https://www.wowprogress.com"
+urlBase = "https://www.wowprogress.com"
 key = "/character/eu/"
 nextkey = "/gearscore/char_rating/next/"
 transferKey = "Yes, ready to transfer"
@@ -34,36 +34,10 @@ async def fetch(session, url):
                 return text, url
         except Exception as e:
             print(str(e))
-    
-async def task(name, finalList, work_queue):
-    #msg = "Getting info for recruit " + str(index) + "/" + str(len(list))
-    #print(msg, end='\r')
-    #index+=1;
-    while not work_queue.empty():
-        item = await work_queue.get()
-        print(f"Task {name} running")
-        url = base + item
-        r = requests.get(url)
-        data = r.text
-        soup = BeautifulSoup(data,'html.parser')
-        
-        needsTransfer = True
-        if ourServer in item:
-            needsTransfer = False
-        
-        for strongText in soup.find_all('strong'):
-            if ourSpecs in strongText.get_text():
-                if needsTransfer:
-                    for spanText in soup.find_all('span'):
-                        if transferKey in spanText.get_text():
-                           finalList.append(url)
-                else:
-                   finalList.append(url)
-        await asyncio.sleep(1)
 
 async def main():
    
-    url = "https://www.wowprogress.com/gearscore/class." + ourClass + "?lfg=1&raids_week=" + ourRaidsPerWeek + "&lang=en"
+    url = urlBase + "/gearscore/class." + ourClass + "?lfg=1&raids_week=" + ourRaidsPerWeek + "&lang=en"
     theList = []
 
     print("Searching for recruits now...")
@@ -80,13 +54,13 @@ async def main():
         for link in soup.find_all('a'):
             target = link.get('href')
             if nextkey in target:
-                url = base + target
+                url = urlBase + target
         
         for tr in soup.find('table').find_all('tr'):
             for link in tr.find_all('a'):
                 target = link.get('href')
                 if nextkey in target:
-                    url = base + target
+                    url = urlBase + target
                 if key in target:
                     for spanText in tr.find_all('span'):
                         if timeKey in spanText.get_text() or timeKey2 in spanText.get_text():
@@ -110,7 +84,7 @@ async def main():
     ##Asynchronously get all the raw html data for each url
     async with aiohttp.ClientSession(headers=headers) as session:
         for item in theList:
-            url = base + item
+            url = urlBase + item
             tasks.append(fetch(session, url))
 
         htmls = await asyncio.gather(*tasks)
