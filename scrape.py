@@ -1,4 +1,6 @@
+import aiohttp
 from bs4 import BeautifulSoup
+#import pandas as pd
 import requests
 import asyncio
 
@@ -24,6 +26,14 @@ print("\n\n Class & spec combinations available: \n ~~~~~~~~~~~~~~~~~~\n deathkn
 ourClass = input("Class: ")
 ourSpecs = input("Specs: ")
 
+
+async def fetch(session, url):
+        try:
+            async with session.get(url) as response:
+                text = await response.text()
+                return text, url
+        except Exception as e:
+            print(str(e))
     
 async def task(name, finalList, work_queue):
     #msg = "Getting info for recruit " + str(index) + "/" + str(len(list))
@@ -54,15 +64,11 @@ async def task(name, finalList, work_queue):
 async def main():
    
     url = "https://www.wowprogress.com/gearscore/class." + ourClass + "?lfg=1&raids_week=" + ourRaidsPerWeek + "&lang=en"
-
-    fileName = ourClass + "_" + ourSpecs + ".txt"
-    f = open(fileName, "w")
-
-   
     theList = []
 
     print("Searching for recruits now...")
 
+    ##Check the class summary pages to gather urls for all characters under the search parameters
     for x in range(pagesToCheck):
         msg = "Checking page " + str(x) + "/" + str(pagesToCheck)
         print(msg, end='\r')
@@ -94,28 +100,46 @@ async def main():
 
     msg = "Found " + str(len(theList)) + " potential recruits."
     print(msg)
-
+    
+    
+    tasks = []
     finalList = []
-    work_queues = []
-    for x in range(4):
-        work_queues.append(asyncio.Queue())
-    queueSize = round(len(theList) / 4)+1;
-    index = 0
-    queueIndex = 0
-    for work in theList:
-        await work_queues[queueIndex].put(work)
-        index+=1
-        if index > queueSize :
-            index = 0
-            queueIndex += 1
-        
-    await asyncio.gather(
-        asyncio.create_task(task("One", finalList, work_queues[0])),
-        asyncio.create_task(task("Two", finalList, work_queues[1])),
-        asyncio.create_task(task("Three", finalList, work_queues[2])),
-        asyncio.create_task(task("Four", finalList, work_queues[3])),
-    )
+    
+    headers = {
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
+    ##Asynchronously get all the raw html data for each url
+    async with aiohttp.ClientSession(headers=headers) as session:
+        for item in theList:
+            url = base + item
+            tasks.append(fetch(session, url))
+
+        htmls = await asyncio.gather(*tasks)
+      
+        for html in htmls:
+            if html is not None:
+                url = html[1]
+                data = html[0]
+                soup = BeautifulSoup(data,'html.parser')
+                ##traverse html data for relevant match to search criteria (TODO Add more filters)
+                needsTransfer = True
+                if ourServer in item:
+                    needsTransfer = False
                 
+                for strongText in soup.find_all('strong'):
+                    if ourSpecs in strongText.get_text():
+                        if needsTransfer:
+                            for spanText in soup.find_all('span'):
+                                if transferKey in spanText.get_text():
+                                   finalList.append(url)
+                        else:
+                           finalList.append(url)
+            else:
+                continue
+    
+    ##Write the relevent urls for hits to file; TODO Directly to google sheet?
+    fileName = ourClass + "_" + ourSpecs + ".txt"
+    f = open(fileName, "w")
+
     for finalItem in finalList:
         f.write(finalItem)
         f.write('\n')
