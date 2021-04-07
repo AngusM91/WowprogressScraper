@@ -114,7 +114,7 @@ async def main():
                                     bossKillTable = soup.find(id="tiers_details")
                                     if bossKillTable is not None:
                                         kills = 0
-                                        for kill in soup.find_all(class_='progress_heroic'):
+                                        for kill in bossKillTable.find_all(class_='progress_heroic'):
                                             if "Mythic" in kill.get_text():
                                                 kills+=1
                                         if kills >= int(minKills):
