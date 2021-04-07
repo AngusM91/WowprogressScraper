@@ -25,6 +25,7 @@ print("\n\n Class & spec combinations available: \n ~~~~~~~~~~~~~~~~~~\n deathkn
 
 ourClass = input("Class: ")
 ourSpecs = input("Specs: ")
+minGearscore = input("Min Gearscore: ")
 
 
 async def fetch(session, url):
@@ -104,12 +105,17 @@ async def main():
                 
                 for strongText in soup.find_all('strong'):
                     if ourSpecs in strongText.get_text():
-                        if needsTransfer:
-                            for spanText in soup.find_all('span'):
-                                if transferKey in spanText.get_text():
-                                   finalList.append(url)
-                        else:
-                           finalList.append(url)
+                        for gs in soup.find_all(class_='gearscore'):
+                            if "Item Level" in gs.get_text():
+                                gsText = gs.get_text()
+                                gsF = float(gsText[12:])
+                                if gsF >= float(minGearscore):
+                                    if needsTransfer:
+                                        for spanText in soup.find_all('span'):
+                                            if transferKey in spanText.get_text():
+                                               finalList.append(url)
+                                    else:
+                                       finalList.append(url)
             else:
                 continue
             index += 1
@@ -117,16 +123,10 @@ async def main():
             print(msg, end='\r')
     
     ##Write the relevent urls for hits to file; TODO Directly to google sheet?
-    fileName = ourClass + "_" + ourSpecs + ".txt"
-    f = open(fileName, "w")
-
-    for finalItem in finalList:
-        f.write(finalItem)
-        f.write('\n')
-    msg = str(len(finalList)) + " recruit(s) found and written to file."
-    print(msg)
-        
-    f.close()
+    file_name = ourClass + "_" + ourSpecs + ".txt"
+    with open(file_name, "w") as f:
+      [f.write(f'{final_item}\n') for final_item in finalList]
+    print(f"{str(len(finalList))} recruit(s) found and written to file.")
     
 if __name__ == "__main__":
     asyncio.run(main())
